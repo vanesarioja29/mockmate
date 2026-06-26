@@ -982,24 +982,18 @@ IMPORTANT RULES:
 }
 
 // ══════════════════════════════════════════
-//  API KEY CONFIG — OpenAI
+//  API CALL — via Cloudflare Worker proxy
 // ══════════════════════════════════════════
-const OPENAI_API_KEY = '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';
+const WORKER_URL = 'https://mockmate-proxy.vanesa-rioja.workers.dev';
 
-// ══════════════════════════════════════════
-//  API CALL — OpenAI gpt-4o-mini
-// ══════════════════════════════════════════
 async function callClaude(userMessage) {
   if (userMessage) {
     state.conversationHistory.push({ role: 'user', content: userMessage });
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(WORKER_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       max_tokens: 1000,
