@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MockMate — Tu Entrevistador IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:      #0A1628;
+    --navy-mid:  #112240;
+    --navy-card: #1E3A5F;
+    --cyan:      #00C2CB;
+    --cyan-dim:  #00909799;
+    --cyan-glow: #00C2CB33;
+    --gold:      #F0A500;
+    --white:     #FFFFFF;
+    --slate:     #B0C4DE;
+    --muted:     #607B96;
+    --danger:    #FF5A5F;
+    --success:   #22C55E;
+    --radius:    12px;
+    --radius-lg: 20px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+  }
+
+  /* ─── SCREENS ─────────────────────────────────────── */
+  .screen { display: none; height: 100vh; width: 100vw; }
+  .screen.active { display: flex; }
+
+  /* ─── LANDING ─────────────────────────────────────── */
+  #screen-landing {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #0d2a4a 0%, var(--navy) 70%);
+    position: relative;
+    overflow: hidden;
+  }
+  #screen-landing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 80%, var(--cyan-glow) 0%, transparent 40%),
+      radial-gradient(circle at 80% 20%, #1E3A5F44 0%, transparent 40%);
+    pointer-events: none;
+  }
+
+  .landing-logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .logo-icon {
+    width: 60px; height: 60px;
+    background: var(--cyan);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px; font-weight: 700;
+    color: var(--navy);
+    box-shadow: 0 0 32px var(--cyan-glow);
+  }
+  .logo-text { font-size: 42px; font-weight: 700; letter-spacing: -1px; }
+  .logo-text span { color: var(--cyan); }
+
+  .landing-tagline {
+    font-size: 18px;
+    color: var(--slate);
+    margin-bottom: 48px;
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+  .landing-tagline strong { color: var(--white); }
+
+  .lang-toggle {
+    display: flex;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-card);
+    border-radius: 50px;
+    padding: 4px;
+    margin-bottom: 36px;
+    gap: 4px;
+  }
+  .lang-btn {
+    padding: 8px 22px;
+    border-radius: 50px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .lang-btn.active { background: var(--cyan); color: var(--navy); }
+
+  .btn-start {
+    padding: 16px 48px;
+    background: var(--cyan);
+    color: var(--navy);
+    font-family: 'Inter', sans-serif;
+    font-size: 17px; font-weight: 700;
+    border: none; border-radius: 50px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 0 24px var(--cyan-glow);
+  }
+  .btn-start:hover { transform: translateY(-2px); box-shadow: 0 0 40px var(--cyan-glow); }
+  .btn-start:active { transform: translateY(0); }
+
+  .landing-stats {
+    display: flex; gap: 48px;
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 1px solid var(--navy-card);
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--cyan); }
+  .stat-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ─── AREA SELECT ──────────────────────────────────── */
+  #screen-select {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy);
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .select-header { text-align: center; margin-bottom: 40px; }
+  .select-header h2 { font-size: 30px; font-weight: 700; margin-bottom: 8px; }
+  .select-header p { color: var(--slate); font-size: 15px; }
+
+  .areas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 800px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+  .area-card {
+    background: var(--navy-mid);
+    border: 2px solid var(--navy-card);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: all .2s;
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .area-card:hover { border-color: var(--cyan-dim); background: #162d4a; }
+  .area-card.selected { border-color: var(--cyan); background: #0d2240; box-shadow: 0 0 20px var(--cyan-glow); }
+  .area-icon { font-size: 32px; flex-shrink: 0; }
+  .area-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .area-info p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  .select-level { max-width: 800px; width: 100%; margin-bottom: 32px; }
+  .select-level label { font-size: 14px; color: var(--slate); font-weight: 500; margin-bottom: 12px; display: block; }
+  .level-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .level-btn {
+    padding: 9px 22px;
+    border-radius: 50px;
+    border: 1.5px solid var(--navy-card);
+    background: transparent;
+    color: var(--slate);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .2s;
+  }
+  .level-btn.active { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-glow); }
+
+  .btn-go {
+    padding: 15px 52px;
+    background: var(--cyan);
+    color: var(--navy);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px; font-weight: 700;
+    border: none; border-radius: 50px;
+    cursor: pointer; transition: all .2s;
+    opacity: .4; pointer-events: none;
+    box-shadow: 0 0 24px var(--cyan-glow);
+  }
+  .btn-go.enabled { opacity: 1; pointer-events: all; }
+  .btn-go.enabled:hover { transform: translateY(-2px); }
+
+  /* ─── INTERVIEW ────────────────────────────────────── */
+  #screen-interview {
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .interview-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--navy-mid);
+    border-right: 1px solid var(--navy-card);
+    display: flex; flex-direction: column;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 28px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--navy-card);
+  }
+  .sidebar-logo .logo-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+  .sidebar-logo span { font-size: 18px; font-weight: 700; }
+  .sidebar-logo span b { color: var(--cyan); }
+
+  .sidebar-section { margin-bottom: 24px; }
+  .sidebar-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+  .sidebar-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .sidebar-info-row .key { font-size: 13px; color: var(--slate); }
+  .sidebar-info-row .val { font-size: 13px; font-weight: 600; color: var(--cyan); }
+
+  .progress-bar-wrap { background: var(--navy-card); border-radius: 50px; height: 6px; margin-bottom: 6px; }
+  .progress-bar-fill { height: 6px; background: var(--cyan); border-radius: 50px; transition: width .4s; }
+  .progress-label { font-size: 12px; color: var(--muted); text-align: right; }
+
+  .score-badge {
+    background: var(--navy-card);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .score-big { font-size: 36px; font-weight: 700; color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+  .score-lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .btn-exit {
+    margin-top: auto;
+    padding: 11px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--navy-card);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; cursor: pointer; transition: all .2s;
+    width: 100%;
+  }
+  .btn-exit:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Chat area */
+  .interview-main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    background: var(--navy);
+  }
+
+  .chat-header {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--navy-card);
+    display: flex; align-items: center; gap: 14px;
+    background: var(--navy-mid);
+  }
+  .interviewer-avatar {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--cyan), #0080ff);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .interviewer-info h3 { font-size: 15px; font-weight: 600; }
+  .interviewer-info p { font-size: 12px; color: var(--cyan); }
+  .live-dot {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--success);
+  }
+  .live-dot::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 20px;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--navy-card); border-radius: 4px; }
+
+  .msg { display: flex; gap: 12px; max-width: 80%; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .msg.ai .msg-avatar { background: linear-gradient(135deg, var(--cyan), #0080ff); }
+  .msg.user .msg-avatar { background: var(--navy-card); }
+
+  .msg-bubble {
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
+    font-size: 14px; line-height: 1.7;
+    position: relative;
+  }
+  .msg.ai .msg-bubble {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-card);
+    border-top-left-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+    color: var(--white);
+  }
+  .msg.user .msg-bubble {
+    background: var(--cyan);
+    color: var(--navy);
+    border-top-right-radius: 4px;
+    font-weight: 500;
+  }
+
+  .msg-meta { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .msg.user .msg-meta { text-align: right; }
+
+  /* Feedback card */
+  .feedback-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-card);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-top: 4px;
+    border-left: 3px solid var(--cyan);
+  }
+  .feedback-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan); margin-bottom: 10px; font-weight: 600; }
+  .feedback-card p { font-size: 13px; line-height: 1.7; color: var(--slate); font-family: 'Inter', sans-serif; }
+  .feedback-score { display: inline-block; padding: 3px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; margin-top: 10px; }
+  .feedback-score.good { background: #22c55e22; color: var(--success); border: 1px solid var(--success); }
+  .feedback-score.mid  { background: #f0a50022; color: var(--gold); border: 1px solid var(--gold); }
+  .feedback-score.low  { background: #ff5a5f22; color: var(--danger); border: 1px solid var(--danger); }
+
+  /* Typing indicator */
+  .typing-indicator { display: flex; gap: 5px; align-items: center; padding: 14px 18px; }
+  .typing-indicator span {
+    width: 8px; height: 8px; background: var(--muted); border-radius: 50%;
+    animation: bounce .9s infinite ease-in-out;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: .15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+
+  /* Cursor blink for typewriter */
+  .typewriter-cursor::after {
+    content: '▌';
+    animation: blink .7s step-end infinite;
+    color: var(--cyan);
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* Input area */
+  .chat-input-area {
+    padding: 20px 28px;
+    border-top: 1px solid var(--navy-card);
+    background: var(--navy-mid);
+    display: flex; gap: 14px; align-items: flex-end;
+  }
+  .chat-input-wrap { flex: 1; position: relative; }
+  #chatInput {
+    width: 100%;
+    background: var(--navy);
+    border: 1.5px solid var(--navy-card);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    resize: none;
+    max-height: 120px;
+    transition: border-color .2s;
+    line-height: 1.5;
+    min-height: 48px;
+  }
+  #chatInput:focus { outline: none; border-color: var(--cyan-dim); }
+  #chatInput::placeholder { color: var(--muted); }
+  #chatInput:disabled { opacity: .5; cursor: not-allowed; }
+
+  .char-count { position: absolute; right: 12px; bottom: 10px; font-size: 11px; color: var(--muted); }
+
+  .btn-send {
+    width: 48px; height: 48px;
+    background: var(--cyan);
+    border: none; border-radius: var(--radius);
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-send:hover { background: #00d9e3; transform: scale(1.05); }
+  .btn-send:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-send svg { fill: var(--navy); }
+
+  .input-hint { font-size: 12px; color: var(--muted); margin-top: 8px; text-align: center; }
+
+  /* ─── RESULTS ──────────────────────────────────────── */
+  #screen-results {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: var(--navy);
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .results-container { max-width: 720px; width: 100%; }
+  .results-header { text-align: center; margin-bottom: 40px; }
+  .results-header .trophy { font-size: 56px; margin-bottom: 16px; }
+  .results-header h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .results-header p { color: var(--slate); }
+
+  .results-score-ring {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: conic-gradient(var(--cyan) 0deg, var(--navy-card) 0deg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 32px;
+    position: relative;
+  }
+  .results-score-ring::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    background: var(--navy);
+    border-radius: 50%;
+  }
+  .results-score-inner { position: relative; z-index: 1; text-align: center; }
+  .results-score-num { font-size: 38px; font-weight: 700; color: var(--cyan); font-family: 'JetBrains Mono', monospace; display: block; }
+  .results-score-lbl { font-size: 12px; color: var(--muted); }
+
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+  .result-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-card);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .result-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+  .result-card p { font-size: 14px; line-height: 1.7; color: var(--slate); }
+  .result-card.full { grid-column: 1/-1; }
+
+  .results-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-secondary {
+    padding: 13px 32px;
+    border: 1.5px solid var(--cyan);
+    background: transparent;
+    color: var(--cyan);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 600;
+    border-radius: 50px; cursor: pointer; transition: all .2s;
+  }
+  .btn-secondary:hover { background: var(--cyan-glow); }
+
+  /* ─── LOADING OVERLAY ──────────────────────────────── */
+  #loadingOverlay {
+    position: fixed; inset: 0;
+    background: #0A162899;
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  #loadingOverlay.show { display: flex; }
+  .loading-spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--navy-card);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── TOAST ────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-card);
+    border-radius: var(--radius);
+    padding: 14px 22px;
+    font-size: 14px; color: var(--white);
+    transition: transform .3s;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ─── RESPONSIVE ───────────────────────────────────── */
+  @media(max-width: 700px) {
+    .interview-sidebar { display: none; }
+    .chat-header { padding: 14px 16px; }
+    .chat-messages { padding: 16px; }
+    .chat-input-area { padding: 14px 16px; }
+    .msg { max-width: 95%; }
+    .results-grid { grid-template-columns: 1fr; }
+    .landing-stats { gap: 28px; }
+    .logo-text { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1: LANDING
+══════════════════════════════════════════ -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-logo">
+    <div class="logo-icon">M</div>
+    <div class="logo-text">Mock<span>Mate</span></div>
+  </div>
+  <p class="landing-tagline">
+    <strong id="tagline-main">Tu entrevistador IA personal.</strong><br>
+    <span id="tagline-sub">Practica entrevistas técnicas reales y obtén feedback inmediato — gratis, 24/7.</span>
+  </p>
+
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('es')">🇵🇪 Español</button>
+    <button class="lang-btn" onclick="setLang('en')">🇺🇸 English</button>
+  </div>
+
+  <button class="btn-start" onclick="goTo('screen-select')">
+    <span id="btn-start-lbl">Comenzar entrevista →</span>
+  </button>
+
+  <div class="landing-stats">
+    <div class="stat"><div class="stat-num">5</div><div class="stat-lbl" id="stat1-lbl">Áreas técnicas</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-lbl" id="stat2-lbl">Disponible</div></div>
+    <div class="stat"><div class="stat-num">IA</div><div class="stat-lbl" id="stat3-lbl">Feedback real</div></div>
+    <div class="stat"><div class="stat-num">Free</div><div class="stat-lbl" id="stat4-lbl">Sin costo</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2: AREA SELECTION
+══════════════════════════════════════════ -->
+<div id="screen-select" class="screen">
+  <div class="select-header">
+    <h2 id="sel-title">Elige tu área de entrevista</h2>
+    <p id="sel-sub">Selecciona el tema y tu nivel de experiencia</p>
+  </div>
+
+  <div class="areas-grid">
+    <div class="area-card" onclick="selectArea(this,'algorithms')">
+      <div class="area-icon">⚡</div>
+      <div class="area-info">
+        <h3 id="area-alg-name">Algoritmos & Estructuras de Datos</h3>
+        <p id="area-alg-desc">Sorting, grafos, programación dinámica, complejidad Big-O</p>
+      </div>
+    </div>
+    <div class="area-card" onclick="selectArea(this,'sql')">
+      <div class="area-icon">🗄️</div>
+      <div class="area-info">
+        <h3 id="area-sql-name">SQL & Bases de Datos</h3>
+        <p id="area-sql-desc">Consultas, normalización, índices, transacciones ACID</p>
+      </div>
+    </div>
+    <div class="area-card" onclick="selectArea(this,'systems')">
+      <div class="area-icon">🌐</div>
+      <div class="area-info">
+        <h3 id="area-sys-name">Sistemas & Redes</h3>
+        <p id="area-sys-desc">HTTP, TCP/IP, DNS, arquitecturas distribuidas, seguridad</p>
+      </div>
+    </div>
+    <div class="area-card" onclick="selectArea(this,'web')">
+      <div class="area-icon">💻</div>
+      <div class="area-info">
+        <h3 id="area-web-name">Desarrollo Web</h3>
+        <p id="area-web-desc">Frontend, backend, APIs REST, rendimiento, arquitectura</p>
+      </div>
+    </div>
+    <div class="area-card" onclick="selectArea(this,'cloud')">
+      <div class="area-icon">☁️</div>
+      <div class="area-info">
+        <h3 id="area-cld-name">Cloud Computing</h3>
+        <p id="area-cld-desc">AWS/GCP/Azure, serverless, contenedores, microservicios</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="select-level">
+    <label id="level-label">Nivel de experiencia:</label>
+    <div class="level-buttons">
+      <button class="level-btn" onclick="selectLevel(this,'junior')" id="lvl-junior">Junior (0–2 años)</button>
+      <button class="level-btn" onclick="selectLevel(this,'mid')" id="lvl-mid">Mid (2–5 años)</button>
+      <button class="level-btn" onclick="selectLevel(this,'senior')" id="lvl-senior">Senior (5+ años)</button>
+    </div>
+  </div>
+
+  <button class="btn-go" id="btn-go" onclick="startInterview()">
+    <span id="btn-go-lbl">Iniciar entrevista →</span>
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3: INTERVIEW
+══════════════════════════════════════════ -->
+<div id="screen-interview" class="screen">
+  <!-- Sidebar -->
+  <aside class="interview-sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">M</div>
+      <span>Mock<b>Mate</b></span>
+    </div>
+
+    <div class="sidebar-section">
+      <h4 id="sb-session-lbl">Sesión</h4>
+      <div class="sidebar-info-row">
+        <span class="key" id="sb-area-lbl">Área</span>
+        <span class="val" id="sb-area-val">—</span>
+      </div>
+      <div class="sidebar-info-row">
+        <span class="key" id="sb-level-lbl">Nivel</span>
+        <span class="val" id="sb-level-val">—</span>
+      </div>
+      <div class="sidebar-info-row">
+        <span class="key" id="sb-q-lbl">Pregunta</span>
+        <span class="val" id="sb-q-val">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h4 id="sb-progress-lbl">Progreso</h4>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">0%</div>
+    </div>
+
+    <div class="sidebar-section">
+      <h4 id="sb-score-lbl">Puntuación</h4>
+      <div class="score-badge">
+        <div class="score-big" id="sidebarScore">—</div>
+        <div class="score-lbl" id="sb-score-sublbl">Puntos acumulados</div>
+      </div>
+    </div>
+
+    <button class="btn-exit" onclick="confirmExit()" id="btn-exit-lbl">✕ Salir de la sesión</button>
+  </aside>
+
+  <!-- Main chat -->
+  <main class="interview-main">
+    <div class="chat-header">
+      <div class="interviewer-avatar">🤖</div>
+      <div class="interviewer-info">
+        <h3 id="interviewer-name">Alex — Entrevistador IA</h3>
+        <p id="interviewer-title">Senior Engineer · MockMate AI</p>
+      </div>
+      <div class="live-dot" id="live-dot-lbl">En vivo</div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages"></div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea id="chatInput" rows="1" placeholder="Escribe tu respuesta aquí..." onkeydown="handleKey(event)" oninput="autoResize(this);updateCharCount()"></textarea>
+        <span class="char-count" id="charCount"></span>
+      </div>
+      <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="input-hint" id="inputHint">Presiona Enter para enviar · Shift+Enter para nueva línea</div>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4: RESULTS
+══════════════════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="results-container">
+    <div class="results-header">
+      <div class="trophy" id="trophyEmoji">🏆</div>
+      <h2 id="results-title">Entrevista completada</h2>
+      <p id="results-sub">Aquí está tu reporte de desempeño</p>
+    </div>
+
+    <div class="results-score-ring" id="scoreRing">
+      <div class="results-score-inner">
+        <span class="results-score-num" id="finalScoreNum">—</span>
+        <span class="results-score-lbl">/ 100</span>
+      </div>
+    </div>
+
+    <div class="results-grid">
+      <div class="result-card">
+        <h4 id="res-strengths-lbl">💪 Fortalezas</h4>
+        <p id="res-strengths-val">—</p>
+      </div>
+      <div class="result-card">
+        <h4 id="res-improve-lbl">🎯 Áreas de mejora</h4>
+        <p id="res-improve-val">—</p>
+      </div>
+      <div class="result-card full">
+        <h4 id="res-reco-lbl">📚 Recursos recomendados</h4>
+        <p id="res-reco-val">—</p>
+      </div>
+    </div>
+
+    <div class="results-actions">
+      <button class="btn-secondary" onclick="goTo('screen-select')" id="btn-retry-lbl">Practicar otra área</button>
+      <button class="btn-start" onclick="goTo('screen-landing')" id="btn-home-lbl">Volver al inicio</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading + Toast -->
+<div id="loadingOverlay"><div class="loading-spinner"></div></div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const state = {
+  lang: 'es',
+  area: null,
+  level: null,
+  questionNum: 0,
+  totalQuestions: 5,
+  scores: [],
+  conversationHistory: [],
+  isWaiting: false
+};
+
+// ══════════════════════════════════════════
+//  TRANSLATIONS
+// ══════════════════════════════════════════
+const T = {
+  es: {
+    taglineMain: 'Tu entrevistador IA personal.',
+    taglineSub: 'Practica entrevistas técnicas reales y obtén feedback inmediato — gratis, 24/7.',
+    btnStart: 'Comenzar entrevista →',
+    stat1: 'Áreas técnicas', stat2: 'Disponible', stat3: 'Feedback real', stat4: 'Sin costo',
+    selTitle: 'Elige tu área de entrevista',
+    selSub: 'Selecciona el tema y tu nivel de experiencia',
+    areaAlgName: 'Algoritmos & Estructuras de Datos',
+    areaAlgDesc: 'Sorting, grafos, programación dinámica, complejidad Big-O',
+    areaSqlName: 'SQL & Bases de Datos',
+    areaSqlDesc: 'Consultas, normalización, índices, transacciones ACID',
+    areaSysName: 'Sistemas & Redes',
+    areaSysDesc: 'HTTP, TCP/IP, DNS, arquitecturas distribuidas, seguridad',
+    areaWebName: 'Desarrollo Web',
+    areaWebDesc: 'Frontend, backend, APIs REST, rendimiento, arquitectura',
+    areaCldName: 'Cloud Computing',
+    areaCldDesc: 'AWS/GCP/Azure, serverless, contenedores, microservicios',
+    levelLabel: 'Nivel de experiencia:',
+    lvlJunior: 'Junior (0–2 años)', lvlMid: 'Mid (2–5 años)', lvlSenior: 'Senior (5+ años)',
+    btnGo: 'Iniciar entrevista →',
+    sbSession: 'Sesión', sbArea: 'Área', sbLevel: 'Nivel', sbQ: 'Pregunta',
+    sbProgress: 'Progreso', sbScore: 'Puntuación', sbScoreSub: 'Puntos acumulados',
+    btnExit: '✕ Salir de la sesión',
+    interviewerName: 'Alex — Entrevistador IA',
+    interviewerTitle: 'Senior Engineer · MockMate AI',
+    liveDot: 'En vivo',
+    inputHint: 'Presiona Enter para enviar · Shift+Enter para nueva línea',
+    placeholder: 'Escribe tu respuesta aquí...',
+    resultsTitle: 'Entrevista completada',
+    resultsSub: 'Aquí está tu reporte de desempeño',
+    resStrengths: '💪 Fortalezas', resImprove: '🎯 Áreas de mejora', resReco: '📚 Recursos recomendados',
+    btnRetry: 'Practicar otra área', btnHome: 'Volver al inicio',
+    confirmExit: '¿Seguro que quieres salir? Perderás el progreso de esta sesión.',
+    areaNames: { algorithms: 'Algoritmos', sql: 'SQL & BD', systems: 'Sistemas', web: 'Web Dev', cloud: 'Cloud' },
+  },
+  en: {
+    taglineMain: 'Your personal AI interviewer.',
+    taglineSub: 'Practice real technical interviews and get instant feedback — free, 24/7.',
+    btnStart: 'Start interview →',
+    stat1: 'Tech areas', stat2: 'Available', stat3: 'Real feedback', stat4: 'Free',
+    selTitle: 'Choose your interview area',
+    selSub: 'Select a topic and your experience level',
+    areaAlgName: 'Algorithms & Data Structures',
+    areaAlgDesc: 'Sorting, graphs, dynamic programming, Big-O complexity',
+    areaSqlName: 'SQL & Databases',
+    areaSqlDesc: 'Queries, normalization, indexes, ACID transactions',
+    areaSysName: 'Systems & Networks',
+    areaSysDesc: 'HTTP, TCP/IP, DNS, distributed architectures, security',
+    areaWebName: 'Web Development',
+    areaWebDesc: 'Frontend, backend, REST APIs, performance, architecture',
+    areaCldName: 'Cloud Computing',
+    areaCldDesc: 'AWS/GCP/Azure, serverless, containers, microservices',
+    levelLabel: 'Experience level:',
+    lvlJunior: 'Junior (0–2 yrs)', lvlMid: 'Mid (2–5 yrs)', lvlSenior: 'Senior (5+ yrs)',
+    btnGo: 'Start interview →',
+    sbSession: 'Session', sbArea: 'Area', sbLevel: 'Level', sbQ: 'Question',
+    sbProgress: 'Progress', sbScore: 'Score', sbScoreSub: 'Accumulated points',
+    btnExit: '✕ Exit session',
+    interviewerName: 'Alex — AI Interviewer',
+    interviewerTitle: 'Senior Engineer · MockMate AI',
+    liveDot: 'Live',
+    inputHint: 'Press Enter to send · Shift+Enter for new line',
+    placeholder: 'Type your answer here...',
+    resultsTitle: 'Interview completed',
+    resultsSub: "Here's your performance report",
+    resStrengths: '💪 Strengths', resImprove: '🎯 Areas to improve', resReco: '📚 Recommended resources',
+    btnRetry: 'Practice another area', btnHome: 'Back to home',
+    confirmExit: 'Are you sure you want to exit? You will lose this session\'s progress.',
+    areaNames: { algorithms: 'Algorithms', sql: 'SQL & DB', systems: 'Systems', web: 'Web Dev', cloud: 'Cloud' },
+  }
+};
+
+function t(key) { return T[state.lang][key] || key; }
+
+function setLang(lang) {
+  state.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  applyTranslations();
+}
+
+function applyTranslations() {
+  const L = T[state.lang];
+  document.getElementById('tagline-main').textContent = L.taglineMain;
+  document.getElementById('tagline-sub').textContent = L.taglineSub;
+  document.getElementById('btn-start-lbl').textContent = L.btnStart;
+  document.getElementById('stat1-lbl').textContent = L.stat1;
+  document.getElementById('stat2-lbl').textContent = L.stat2;
+  document.getElementById('stat3-lbl').textContent = L.stat3;
+  document.getElementById('stat4-lbl').textContent = L.stat4;
+  document.getElementById('sel-title').textContent = L.selTitle;
+  document.getElementById('sel-sub').textContent = L.selSub;
+  document.getElementById('area-alg-name').textContent = L.areaAlgName;
+  document.getElementById('area-alg-desc').textContent = L.areaAlgDesc;
+  document.getElementById('area-sql-name').textContent = L.areaSqlName;
+  document.getElementById('area-sql-desc').textContent = L.areaSqlDesc;
+  document.getElementById('area-sys-name').textContent = L.areaSysName;
+  document.getElementById('area-sys-desc').textContent = L.areaSysDesc;
+  document.getElementById('area-web-name').textContent = L.areaWebName;
+  document.getElementById('area-web-desc').textContent = L.areaWebDesc;
+  document.getElementById('area-cld-name').textContent = L.areaCldName;
+  document.getElementById('area-cld-desc').textContent = L.areaCldDesc;
+  document.getElementById('level-label').textContent = L.levelLabel;
+  document.getElementById('lvl-junior').textContent = L.lvlJunior;
+  document.getElementById('lvl-mid').textContent = L.lvlMid;
+  document.getElementById('lvl-senior').textContent = L.lvlSenior;
+  document.getElementById('btn-go-lbl').textContent = L.btnGo;
+  document.getElementById('sb-session-lbl').textContent = L.sbSession;
+  document.getElementById('sb-area-lbl').textContent = L.sbArea;
+  document.getElementById('sb-level-lbl').textContent = L.sbLevel;
+  document.getElementById('sb-q-lbl').textContent = L.sbQ;
+  document.getElementById('sb-progress-lbl').textContent = L.sbProgress;
+  document.getElementById('sb-score-lbl').textContent = L.sbScore;
+  document.getElementById('sb-score-sublbl').textContent = L.sbScoreSub;
+  document.getElementById('btn-exit-lbl').textContent = L.btnExit;
+  document.getElementById('interviewer-name').textContent = L.interviewerName;
+  document.getElementById('interviewer-title').textContent = L.interviewerTitle;
+  document.getElementById('live-dot-lbl').textContent = L.liveDot;
+  document.getElementById('inputHint').textContent = L.inputHint;
+  document.getElementById('chatInput').placeholder = L.placeholder;
+  document.getElementById('results-title').textContent = L.resultsTitle;
+  document.getElementById('results-sub').textContent = L.resultsSub;
+  document.getElementById('res-strengths-lbl').textContent = L.resStrengths;
+  document.getElementById('res-improve-lbl').textContent = L.resImprove;
+  document.getElementById('res-reco-lbl').textContent = L.resReco;
+  document.getElementById('btn-retry-lbl').textContent = L.btnRetry;
+  document.getElementById('btn-home-lbl').textContent = L.btnHome;
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+//  AREA & LEVEL SELECTION
+// ══════════════════════════════════════════
+function selectArea(el, area) {
+  document.querySelectorAll('.area-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.area = area;
+  checkCanStart();
+}
+
+function selectLevel(el, level) {
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  state.level = level;
+  checkCanStart();
+}
+
+function checkCanStart() {
+  const btn = document.getElementById('btn-go');
+  if (state.area && state.level) btn.classList.add('enabled');
+  else btn.classList.remove('enabled');
+}
+
+// ══════════════════════════════════════════
+//  INTERVIEW START
+// ══════════════════════════════════════════
+async function startInterview() {
+  if (!state.area || !state.level) return;
+
+  // Reset state
+  state.questionNum = 0;
+  state.scores = [];
+  state.conversationHistory = [];
+
+  // Update sidebar
+  document.getElementById('sb-area-val').textContent = t('areaNames')[state.area];
+  document.getElementById('sb-level-val').textContent = state.level;
+  document.getElementById('sb-q-val').textContent = `1 / ${state.totalQuestions}`;
+  document.getElementById('sidebarScore').textContent = '—';
+  updateProgress(0);
+
+  // Clear chat
+  document.getElementById('chatMessages').innerHTML = '';
+  goTo('screen-interview');
+
+  // Enable input
+  setInputEnabled(false);
+
+  // Get first question from AI
+  await askFirstQuestion();
+}
+
+// ══════════════════════════════════════════
+//  SYSTEM PROMPT
+// ══════════════════════════════════════════
+function buildSystemPrompt() {
+  const lang = state.lang === 'es' ? 'Spanish' : 'English';
+  const areaMap = {
+    algorithms: 'Algorithms and Data Structures',
+    sql: 'SQL and Databases',
+    systems: 'Systems and Networks',
+    web: 'Web Development',
+    cloud: 'Cloud Computing'
+  };
+  return `You are Alex, a Senior Software Engineer conducting a mock technical interview for a ${state.level}-level candidate in ${areaMap[state.area]}. 
+
+IMPORTANT RULES:
+1. Respond ALWAYS in ${lang}.
+2. You will ask exactly ${state.totalQuestions} questions total, one at a time.
+3. After each answer, provide brief feedback (2-3 sentences max) and a score from 0-100.
+4. Use this EXACT JSON format for your response after the first question:
+{
+  "type": "feedback_and_question",
+  "feedback": "Your feedback here...",
+  "score": 75,
+  "question_num": 2,
+  "question": "Next question here..."
+}
+5. For the FIRST question, use this format:
+{
+  "type": "first_question",
+  "greeting": "Brief friendly greeting...",
+  "question_num": 1,
+  "question": "Question here..."
+}
+6. For the LAST feedback (after question 5), use this format:
+{
+  "type": "final_feedback",
+  "feedback": "Final detailed feedback...",
+  "score": 80,
+  "strengths": "What they did well...",
+  "improvements": "What to work on...",
+  "resources": "2-3 specific resources to study..."
+}
+7. Questions must be appropriate for ${state.level} level.
+8. Be encouraging but honest.
+9. ONLY respond with valid JSON, no extra text outside the JSON.`;
+}
+
+// ══════════════════════════════════════════
+//  API CALL
+// ══════════════════════════════════════════
+async function callClaude(userMessage) {
+  if (userMessage) {
+    state.conversationHistory.push({ role: 'user', content: userMessage });
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: buildSystemPrompt(),
+      messages: state.conversationHistory
+    })
+  });
+
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+  const data = await response.json();
+  const text = data.content[0].text;
+  state.conversationHistory.push({ role: 'assistant', content: text });
+  return text;
+}
+
+// ══════════════════════════════════════════
+//  PARSE RESPONSE
+// ══════════════════════════════════════════
+function parseResponse(text) {
+  try {
+    const clean = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    // fallback: extract JSON from text
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw e;
+  }
+}
+
+// ══════════════════════════════════════════
+//  FIRST QUESTION
+// ══════════════════════════════════════════
+async function askFirstQuestion() {
+  showTypingIndicator();
+  try {
+    const raw = await callClaude('Start the interview. Ask the first question.');
+    removeTypingIndicator();
+    const resp = parseResponse(raw);
+
+    if (resp.type === 'first_question') {
+      appendAIMessage(resp.greeting + '\n\n' + resp.question);
+      state.questionNum = 1;
+      updateProgress(0);
+      document.getElementById('sb-q-val').textContent = `${resp.question_num} / ${state.totalQuestions}`;
+    }
+  } catch(e) {
+    removeTypingIndicator();
+    showToast('⚠️ Error connecting to AI. Check your connection.');
+    console.error(e);
+  }
+  setInputEnabled(true);
+}
+
+// ══════════════════════════════════════════
+//  SEND MESSAGE
+// ══════════════════════════════════════════
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || state.isWaiting) return;
+
+  appendUserMessage(text);
+  input.value = '';
+  autoResize(input);
+  updateCharCount();
+  setInputEnabled(false);
+  state.isWaiting = true;
+
+  showTypingIndicator();
+  try {
+    const raw = await callClaude(text);
+    removeTypingIndicator();
+    const resp = parseResponse(raw);
+
+    if (resp.type === 'feedback_and_question') {
+      appendAIFeedback(resp.feedback, resp.score);
+      appendAIMessage(resp.question);
+      state.questionNum = resp.question_num;
+      state.scores.push(resp.score);
+      updateSidebarScore();
+      const pct = Math.round(((state.questionNum - 1) / state.totalQuestions) * 100);
+      updateProgress(pct);
+      document.getElementById('sb-q-val').textContent = `${resp.question_num} / ${state.totalQuestions}`;
+      setInputEnabled(true);
+
+    } else if (resp.type === 'final_feedback') {
+      state.scores.push(resp.score);
+      appendAIFeedback(resp.feedback, resp.score);
+      updateProgress(100);
+      updateSidebarScore();
+
+      // Show results after brief delay
+      setTimeout(() => showResults(resp), 1500);
+    }
+  } catch(e) {
+    removeTypingIndicator();
+    showToast('⚠️ Error getting response. Try again.');
+    console.error(e);
+    setInputEnabled(true);
+  }
+  state.isWaiting = false;
+}
+
+// ══════════════════════════════════════════
+//  RESULTS
+// ══════════════════════════════════════════
+function showResults(resp) {
+  const avg = Math.round(state.scores.reduce((a,b)=>a+b,0) / state.scores.length);
+
+  document.getElementById('finalScoreNum').textContent = avg;
+
+  // Animate score ring
+  const deg = Math.round((avg / 100) * 360);
+  document.getElementById('scoreRing').style.background =
+    `conic-gradient(var(--cyan) ${deg}deg, var(--navy-card) ${deg}deg)`;
+
+  // Trophy
+  document.getElementById('trophyEmoji').textContent = avg >= 80 ? '🏆' : avg >= 60 ? '🥈' : '💪';
+
+  document.getElementById('res-strengths-val').textContent = resp.strengths || '—';
+  document.getElementById('res-improve-val').textContent = resp.improvements || '—';
+  document.getElementById('res-reco-val').textContent = resp.resources || '—';
+
+  goTo('screen-results');
+}
+
+// ══════════════════════════════════════════
+//  CHAT HELPERS
+// ══════════════════════════════════════════
+function appendAIMessage(text) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div>
+      <div class="msg-bubble typewriter-cursor" id="tw-${Date.now()}"></div>
+      <div class="msg-meta">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const bubble = div.querySelector('.msg-bubble');
+  typewrite(bubble, text);
+}
+
+function appendAIFeedback(text, score) {
+  const msgs = document.getElementById('chatMessages');
+  const scoreClass = score >= 75 ? 'good' : score >= 50 ? 'mid' : 'low';
+  const scoreLabel = state.lang === 'es' ? 'Puntuación' : 'Score';
+  const feedbackLabel = state.lang === 'es' ? 'Feedback' : 'Feedback';
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div>
+      <div class="feedback-card">
+        <h4>${feedbackLabel}</h4>
+        <p>${escapeHtml(text)}</p>
+        <span class="feedback-score ${scoreClass}">${scoreLabel}: ${score}/100</span>
+      </div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendUserMessage(text) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-avatar">👤</div>
+    <div>
+      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-meta">${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTypingIndicator() {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div class="msg-bubble" style="padding:8px 18px">
+      <div class="typing-indicator"><span></span><span></span><span></span></div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+// Typewriter effect
+function typewrite(el, text, i=0) {
+  if (i < text.length) {
+    el.textContent += text[i];
+    el.classList.add('typewriter-cursor');
+    const delay = text[i] === '\n' ? 60 : text[i] === '.' ? 80 : 18;
+    setTimeout(() => typewrite(el, text, i+1), delay);
+  } else {
+    el.classList.remove('typewriter-cursor');
+    document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+  }
+}
+
+// ══════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════
+function setInputEnabled(enabled) {
+  const inp = document.getElementById('chatInput');
+  const btn = document.getElementById('sendBtn');
+  inp.disabled = !enabled;
+  btn.disabled = !enabled;
+  if (enabled) inp.focus();
+}
+
+function updateProgress(pct) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = pct + '%';
+}
+
+function updateSidebarScore() {
+  if (!state.scores.length) return;
+  const avg = Math.round(state.scores.reduce((a,b)=>a+b,0) / state.scores.length);
+  document.getElementById('sidebarScore').textContent = avg;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function updateCharCount() {
+  const v = document.getElementById('chatInput').value;
+  const el = document.getElementById('charCount');
+  el.textContent = v.length > 20 ? v.length : '';
+}
+
+function confirmExit() {
+  if (confirm(t('confirmExit'))) goTo('screen-landing');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+</script>
+</body>
+</html>
